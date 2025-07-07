@@ -3,6 +3,8 @@ const { ethers } = require('ethers');
 const User = require('../models/User');
 const Wallet = require('../models/Wallet');
 const { authenticateToken } = require('../middleware/auth');
+const dotenv = require('dotenv');
+dotenv.config();
 
 const router = express.Router();
 
@@ -36,6 +38,75 @@ try {
 const isBlockchainAvailable = () => {
   return provider && tokenContract && stakingContract;
 };
+
+router.post('/convert-points', authenticateToken, async (req, res) => {
+  try {
+    if (!isBlockchainAvailable()) {
+      return res.status(503).json({ 
+        error: 'Blockchain service not available. Please check contract addresses and RPC URL.' 
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+    const wallet = await Wallet.findOne({ user: req.user._id });
+
+    if (!wallet) {
+      return res.status(404).json({ error: 'Wallet not found' });
+    }
+
+    const POINTS_REQUIRED = 100;
+    const TOKENS_REWARDED = 2;
+
+    // Check user has enough points
+    if (user.points < POINTS_REQUIRED) {
+      return res.status(400).json({ error: 'Insufficient points to convert. Need at least 100 points.' });
+    }
+
+    // Load owner's signer
+    const ownerPrivateKey = process.env.OWNER_PRIVATE_KEY;
+    if (!ownerPrivateKey) {
+      return res.status(500).json({ error: 'Owner wallet not configured on backend' });
+    }
+
+    const ownerWallet = new ethers.Wallet(ownerPrivateKey, provider);
+    const tokenContractWithSigner = tokenContract.connect(ownerWallet);
+
+    // Mint tokens to user's wallet address
+    const mintTx = await tokenContractWithSigner.mint(
+      wallet.address,
+      ethers.parseEther(TOKENS_REWARDED.toString())
+    );
+    await mintTx.wait();
+
+    // Deduct points from user
+    user.points -= POINTS_REQUIRED;
+    await user.save();
+
+    // Update wallet balance (optional, for backend DB tracking)
+    wallet.balance += TOKENS_REWARDED;
+    await wallet.save();
+
+    // Log transaction
+    await wallet.addTransaction({
+      type: 'mint',
+      amount: TOKENS_REWARDED,
+      txHash: mintTx.hash,
+      status: 'completed',
+      description: `Converted ${POINTS_REQUIRED} points to ${TOKENS_REWARDED} RDT`
+    });
+
+    res.json({
+      message: 'Points converted to tokens successfully',
+      pointsDeducted: POINTS_REQUIRED,
+      tokensMinted: TOKENS_REWARDED,
+      txHash: mintTx.hash
+    });
+
+  } catch (error) {
+    console.error('Convert points error:', error);
+    res.status(500).json({ error: 'Failed to convert points to tokens' });
+  }
+});
 
 // Get blockchain info
 router.get('/blockchain-info', async (req, res) => {
@@ -355,54 +426,5 @@ router.get('/market-info', async (req, res) => {
   }
 });
 
-// Get user's blockchain transactions
-router.get('/transactions', async (req, res) => {
-  try {
-    if (!isBlockchainAvailable()) {
-      return res.status(503).json({ 
-        error: 'Blockchain service not available. Please check contract addresses and RPC URL.' 
-      });
-    }
-
-    const wallet = await Wallet.findOne({ user: req.user._id });
-
-    if (!wallet) {
-      return res.status(404).json({ error: 'Wallet not found' });
-    }
-
-    // Get transactions from blockchain (limited to recent blocks)
-    const latestBlock = await provider.getBlockNumber();
-    const fromBlock = Math.max(0, latestBlock - 1000); // Last 1000 blocks
-    
-    const filter = {
-      address: tokenContract.target,
-      fromBlock: fromBlock,
-      toBlock: latestBlock
-    };
-
-    const logs = await provider.getLogs(filter);
-    const userTransactions = logs.filter(log => {
-      const parsedLog = tokenContract.interface.parseLog(log);
-      return parsedLog.args.from === wallet.address || parsedLog.args.to === wallet.address;
-    });
-
-    const transactions = userTransactions.map(log => {
-      const parsedLog = tokenContract.interface.parseLog(log);
-      return {
-        type: parsedLog.name,
-        from: parsedLog.args.from,
-        to: parsedLog.args.to,
-        amount: parseFloat(ethers.formatEther(parsedLog.args.value)),
-        blockNumber: log.blockNumber,
-        transactionHash: log.transactionHash
-      };
-    });
-
-    res.json({ transactions });
-  } catch (error) {
-    console.error('Get blockchain transactions error:', error);
-    res.status(500).json({ error: 'Failed to get blockchain transactions' });
-  }
-});
 
 module.exports = router; 
