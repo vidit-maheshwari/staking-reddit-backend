@@ -102,7 +102,6 @@ A comprehensive backend for a Reddit-like social platform with crypto integratio
 ### Wallet
 - `POST /api/wallet/create` - Create wallet
 - `GET /api/wallet/info` - Get wallet info
-- `POST /api/wallet/convert-points` - Convert points to tokens
 - `GET /api/wallet/transactions` - Get transaction history
 - `GET /api/wallet/balance` - Get wallet balance
 - `GET /api/wallet/points-info` - Get points conversion info
@@ -163,13 +162,7 @@ A comprehensive backend for a Reddit-like social platform with crypto integratio
 - Rate limiting
 - Input validation
 - CORS protection
-- Helmet security headers
 
-## Real-time Features
-
-- Socket.io integration for live updates
-- Real-time notifications
-- Live post updates
 
 ## Development
 
@@ -200,16 +193,5 @@ The backend integrates with two main smart contracts:
 1. **RedditToken.sol**: ERC20 token for the platform
 2. **Staking.sol**: Staking contract with APY tiers
 
-Make sure to deploy these contracts and update the addresses in your environment variables.
 
-## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## License
-
-ISC License 
