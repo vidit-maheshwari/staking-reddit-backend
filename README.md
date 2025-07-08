@@ -40,7 +40,7 @@ A comprehensive backend for a Reddit-like social platform with crypto integratio
    Create a `.env` file in the server directory:
    ```env
    # Server Configuration
-   PORT=5000
+   PORT=3000
    NODE_ENV=development
 
    # Database
@@ -49,8 +49,6 @@ A comprehensive backend for a Reddit-like social platform with crypto integratio
    # JWT Secret
    JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 
-   # Frontend URL (for CORS)
-   FRONTEND_URL=http://localhost:3000
 
    # Blockchain Configuration
    RPC_URL=http://localhost:8545
