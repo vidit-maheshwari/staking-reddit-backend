@@ -92,23 +92,6 @@ router.get('/leaderboard/points', async (req, res) => {
   }
 });
 
-// Get leaderboard by posts
-router.get('/leaderboard/posts', async (req, res) => {
-  try {
-    const limit = parseInt(req.query.limit) || 10;
-    
-    const users = await User.find()
-      .select('username avatar points totalPosts totalLikes totalComments createdAt')
-      .sort({ totalPosts: -1 })
-      .limit(limit);
-
-    res.json({ users });
-  } catch (error) {
-    console.error('Get posts leaderboard error:', error);
-    res.status(500).json({ error: 'Failed to get posts leaderboard' });
-  }
-});
-
 // Search users
 router.get('/search', async (req, res) => {
   try {

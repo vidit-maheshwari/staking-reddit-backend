@@ -4,7 +4,7 @@ Complete API documentation for the Reddit-like platform with crypto integration.
 
 ## Base URL
 ```
-http://localhost:5000/api
+http://localhost:3000/api
 ```
 
 ## Authentication
@@ -672,6 +672,27 @@ Authorization: Bearer <your-jwt-token>
 ---
 
 ## ⛓️ Crypto/Blockchain Endpoints
+
+**POST** `/crypto/convert-points`
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request Body:**
+```json
+{
+  "points": 100 // Must be multiple of 100
+}
+```
+
+**Response (200):**
+```json
+{
+  "message": "Points converted successfully",
+  "pointsConverted": 100,
+  "tokensReceived": 2,
+  "remainingPoints": 50
+}
+```
 
 ### Get Blockchain Info
 **GET** `/crypto/blockchain-info`
